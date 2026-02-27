@@ -8,21 +8,32 @@ namespace Librarium.Librarium.Api.Controllers;
 [Route("api")]
 public class LibraryController(ILibraryService service) : ControllerBase
 {
-    [HttpGet("books")]
+    
+    private const string GetAllBooksRoute = "get-books";
+    private const string GetAllMembersRoute = "get-members";
+    private const string CreateLoanRoute = "create-loan";
+    private const string GetAllLoansForMemberRoute = "get-loans/{memberId:int}";
+    
+    
+    
+    [HttpGet]
+    [Route(GetAllBooksRoute)]
     public async Task<IActionResult> GetBooks(CancellationToken cancellationToken)
     {
         var books = await service.GetBooksAsync(cancellationToken);
         return Ok(books);
     }
 
-    [HttpGet("members")]
+    [HttpGet]
+    [Route(GetAllMembersRoute)]
     public async Task<IActionResult> GetMembers(CancellationToken cancellationToken)
     {
         var members = await service.GetMembersAsync(cancellationToken);
         return Ok(members);
     }
 
-    [HttpPost("loans")]
+    [HttpPost]
+    [Route(CreateLoanRoute)]
     public async Task<IActionResult> CreateLoan([FromBody] CreateLoanRequest request, CancellationToken cancellationToken)
     {
         try
@@ -36,7 +47,8 @@ public class LibraryController(ILibraryService service) : ControllerBase
         }
     }
 
-    [HttpGet("loans/{memberId:int}")]
+    [HttpGet]
+    [Route(GetAllLoansForMemberRoute)]
     public async Task<IActionResult> GetLoansForMember(int memberId, CancellationToken cancellationToken)
     {
         var loans = await service.GetLoansForMemberAsync(memberId, cancellationToken);
