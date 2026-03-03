@@ -47,6 +47,7 @@ public class LibraryDbContext(DbContextOptions<LibraryDbContext> options) : DbCo
             entity.Property(x => x.FirstName).IsRequired().HasMaxLength(128);
             entity.Property(x => x.LastName).IsRequired().HasMaxLength(128);
             entity.Property(x => x.Email).IsRequired().HasMaxLength(256);
+            entity.Property(x => x.PhoneNumber).IsRequired().HasMaxLength(64);
             entity.HasIndex(x => x.Email).IsUnique();
         });
 
