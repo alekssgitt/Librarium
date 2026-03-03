@@ -53,14 +53,37 @@ public class LibraryService(ILibraryRepository repository) : ILibraryService
         {
             BookId = request.BookId,
             MemberId = request.MemberId,
-            LoanDate = request.LoanDate ?? DateTime.UtcNow
+            LoanDate = request.LoanDate ?? DateTime.UtcNow,
+            Status = "Active"
         };
 
         return await repository.CreateLoanAsync(loan, cancellationToken);
     }
 
-    public Task<IReadOnlyList<Loan>> GetLoansForMemberAsync(int memberId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<LoanResponse>> GetLoansForMemberAsync(int memberId, CancellationToken cancellationToken = default)
     {
-        return repository.GetLoansForMemberAsync(memberId, cancellationToken);
+        var loans = await repository.GetLoansForMemberAsync(memberId, cancellationToken);
+
+        return loans.Select(loan => new LoanResponse
+        {
+            LoanId = loan.Id,
+            BookTitle = loan.Book.Title,
+            LoanDate = loan.LoanDate,
+            ReturnDate = loan.ReturnDate
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<LoanV2Response>> GetLoansForMemberV2Async(int memberId, CancellationToken cancellationToken = default)
+    {
+        var loans = await repository.GetLoansForMemberAsync(memberId, cancellationToken);
+
+        return loans.Select(loan => new LoanV2Response
+        {
+            LoanId = loan.Id,
+            BookTitle = loan.Book.Title,
+            LoanDate = loan.LoanDate,
+            ReturnDate = loan.ReturnDate,
+            Status = loan.Status
+        }).ToList();
     }
 }
