@@ -10,6 +10,7 @@ public class LibraryRepository(LibraryDbContext context) : ILibraryRepository
     {
         return await context.Books
             .AsNoTracking()
+            .Include(x => x.Authors)
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
     }

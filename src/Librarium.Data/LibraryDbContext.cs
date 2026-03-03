@@ -5,12 +5,21 @@ namespace Librarium.Librarium.Data;
 
 public class LibraryDbContext(DbContextOptions<LibraryDbContext> options) : DbContext(options)
 {
+    public DbSet<Author> Authors => Set<Author>();
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<Loan> Loans => Set<Loan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Author>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.FirstName).IsRequired().HasMaxLength(128);
+            entity.Property(x => x.LastName).IsRequired().HasMaxLength(128);
+            entity.Property(x => x.Biography).HasMaxLength(4000);
+        });
+
         modelBuilder.Entity<Book>(entity =>
         {
             entity.HasKey(x => x.Id);
@@ -18,6 +27,18 @@ public class LibraryDbContext(DbContextOptions<LibraryDbContext> options) : DbCo
             entity.Property(x => x.ISBN).IsRequired().HasMaxLength(32);
             entity.HasIndex(x => x.ISBN).IsUnique();
             entity.Property(x => x.PublicationYear).IsRequired();
+
+            entity.HasMany(x => x.Authors)
+                .WithMany(x => x.Books)
+                .UsingEntity<Dictionary<string, object>>(
+                    "BookAuthors",
+                    left => left.HasOne<Author>().WithMany().HasForeignKey("AuthorId").OnDelete(DeleteBehavior.Cascade),
+                    right => right.HasOne<Book>().WithMany().HasForeignKey("BookId").OnDelete(DeleteBehavior.Cascade),
+                    join =>
+                    {
+                        join.HasKey("BookId", "AuthorId");
+                        join.ToTable("BookAuthors");
+                    });
         });
 
         modelBuilder.Entity<Member>(entity =>

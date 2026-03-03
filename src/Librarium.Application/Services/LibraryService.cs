@@ -6,9 +6,30 @@ namespace Librarium.Librarium.Application.Services;
 
 public class LibraryService(ILibraryRepository repository) : ILibraryService
 {
-    public Task<IReadOnlyList<Book>> GetBooksAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<BookResponse>> GetBooksAsync(CancellationToken cancellationToken = default)
     {
-        return repository.GetBooksAsync(cancellationToken);
+        var books = await repository.GetBooksAsync(cancellationToken);
+
+        return books
+            .Select(book => new BookResponse
+            {
+                BookId = book.Id,
+                Title = book.Title,
+                Isbn = book.ISBN,
+                PublicationYear = book.PublicationYear,
+                Authors = book.Authors
+                    .OrderBy(a => a.LastName)
+                    .ThenBy(a => a.FirstName)
+                    .Select(author => new AuthorResponse
+                    {
+                        AuthorId = author.Id,
+                        FirstName = author.FirstName,
+                        LastName = author.LastName,
+                        Biography = author.Biography
+                    })
+                    .ToList()
+            })
+            .ToList();
     }
 
     public Task<IReadOnlyList<Member>> GetMembersAsync(CancellationToken cancellationToken = default)
