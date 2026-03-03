@@ -7,6 +7,7 @@ public class Loan
     public int MemberId { get; set; }
     public DateTime LoanDate { get; set; }
     public DateTime? ReturnDate { get; set; }
+    public string Status { get; set; } = "Active";
 
     public Book Book { get; set; } = null!;
     public Member Member { get; set; } = null!;

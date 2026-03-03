@@ -55,6 +55,10 @@ public class LibraryDbContext(DbContextOptions<LibraryDbContext> options) : DbCo
         {
             entity.HasKey(x => x.Id);
             entity.Property(x => x.LoanDate).IsRequired();
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(16).HasDefaultValue("Active");
+            entity.ToTable(t => t.HasCheckConstraint(
+                "CK_Loans_Status",
+                "\"Status\" IN ('Active','Returned','Overdue','Lost')"));
 
             entity.HasOne(x => x.Book)
                 .WithMany(x => x.Loans)
