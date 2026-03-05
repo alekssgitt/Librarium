@@ -10,6 +10,7 @@ public class LibraryRepository(LibraryDbContext context) : ILibraryRepository
     {
         return await context.Books
             .AsNoTracking()
+            .Where(x => !x.IsRetired)
             .Include(x => x.Authors)
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
@@ -38,6 +39,24 @@ public class LibraryRepository(LibraryDbContext context) : ILibraryRepository
     public Task<bool> BookExistsAsync(int bookId, CancellationToken cancellationToken = default)
     {
         return context.Books.AnyAsync(x => x.Id == bookId, cancellationToken);
+    }
+
+    public Task<bool> CanBookBeLoanedAsync(int bookId, CancellationToken cancellationToken = default)
+    {
+        return context.Books.AnyAsync(x => x.Id == bookId && !x.IsRetired, cancellationToken);
+    }
+
+    public async Task<bool> RetireBookAsync(int bookId, CancellationToken cancellationToken = default)
+    {
+        var book = await context.Books.FirstOrDefaultAsync(x => x.Id == bookId, cancellationToken);
+        if (book is null || book.IsRetired)
+        {
+            return false;
+        }
+
+        book.IsRetired = true;
+        await context.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     public Task<bool> MemberExistsAsync(int memberId, CancellationToken cancellationToken = default)
