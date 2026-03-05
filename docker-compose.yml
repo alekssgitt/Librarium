@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: librarium-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: LibraryDb
+      POSTGRES_USER: libraryuser
+      POSTGRES_PASSWORD: librarypass
+    ports:
+      - "5432:5432"
+    volumes:
+      - librarium_pgdata:/var/lib/postgresql/data
+
+volumes:
+  librarium_pgdata:

@@ -27,6 +27,7 @@ public class LibraryDbContext(DbContextOptions<LibraryDbContext> options) : DbCo
             entity.Property(x => x.ISBN).IsRequired().HasMaxLength(32);
             entity.HasIndex(x => x.ISBN).IsUnique();
             entity.Property(x => x.PublicationYear).IsRequired();
+            entity.Property(x => x.IsRetired).IsRequired().HasDefaultValue(false);
 
             entity.HasMany(x => x.Authors)
                 .WithMany(x => x.Books)
