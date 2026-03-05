@@ -44,6 +44,11 @@ public class LibraryService(ILibraryRepository repository) : ILibraryService
             throw new KeyNotFoundException($"Book with id {request.BookId} was not found.");
         }
 
+        if (!await repository.CanBookBeLoanedAsync(request.BookId, cancellationToken))
+        {
+            throw new InvalidOperationException($"Book with id {request.BookId} is retired and cannot be loaned anymore");
+        }
+
         if (!await repository.MemberExistsAsync(request.MemberId, cancellationToken))
         {
             throw new KeyNotFoundException($"Member with id {request.MemberId} was not found.");
@@ -58,6 +63,11 @@ public class LibraryService(ILibraryRepository repository) : ILibraryService
         };
 
         return await repository.CreateLoanAsync(loan, cancellationToken);
+    }
+
+    public Task<bool> RetireBookAsync(int bookId, CancellationToken cancellationToken = default)
+    {
+        return repository.RetireBookAsync(bookId, cancellationToken);
     }
 
     public async Task<IReadOnlyList<LoanResponse>> GetLoansForMemberAsync(int memberId, CancellationToken cancellationToken = default)
