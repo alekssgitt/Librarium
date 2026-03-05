@@ -69,3 +69,21 @@ Run this migration only after data cleanup is complete. The script fails fast if
 
 ### Decisions and tradeoffs
 I chose precondition checks instead of auto-fixing data with sql scripts because automatic rewrites can be messy and surprising to users and data managers. Failing fast makes coordination completely visible and keeps ownership of cleanup of the data. The downside is that extra operational effort is required by the developers and one more deployment step is required. The benefit is correctness, traceability, and clearer production behavior.I believe this is a more clean way to do it since the application is treated as a live production software.
+
+---
+
+## Migration 005 - Loan Status addition
+
+**Description:** Adds loan `Status` values and introduces a versioned loans endpoint so that already existing clients can continue to work unchanged.
+
+### Type of change
+Requires coordination.
+
+### API impact
+The existing `GET /api/loans/{memberId}` endpoint is kept stable and unchanged for the current frontend and still returns `loanId`, `bookTitle`, `loanDate`, and `returnDate` all the same. A new endpoint, `GET /api/v2/loans/{memberId}`, was created to include the new `status` field. I versioned here because the existing client cannot update yet and currently depends on `returnDate == null` to decide if the loan is open or not.
+
+### Deployment notes
+You should apply this migration before deploying the new API code. The artifact adds `Status`, backfills existing rows (`Returned` when `ReturnDate` is not null, otherwise `Active`), then enforces `NOT NULL`, a default of `Active`, and a status check constraint. This ensures that the old application keeps functioning during coexistence because inserts that do not specify status still receive the default value. Once the frontend is migrated, everybody should move to the v2 endpoint for status feature.
+
+### Decisions and tradeoffs
+I chose endpoint versioning for this requirement because this is not just adding some metadata, because the frontend has logic tied to the old contract and cannot change immediately. Running v1 and v2 apis in parallel helps to avoid a forced client change and protects ongoing frontend work. For historical rows, I only inferred `Active` and `Returned` because there is yet no due date or book loss data available to use `Overdue` or `Lost` in the db safely. The tradeoff is temporary maintenance cost for two endpoints, but that is acceptable compared to breaking an active frontend. I believe it strongly aligns with the live system rule of minimizing disruption first.
