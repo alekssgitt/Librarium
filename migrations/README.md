@@ -87,3 +87,21 @@ You should apply this migration before deploying the new API code. The artifact 
 
 ### Decisions and tradeoffs
 I chose endpoint versioning for this requirement because this is not just adding some metadata, because the frontend has logic tied to the old contract and cannot change immediately. Running v1 and v2 apis in parallel helps to avoid a forced client change and protects ongoing frontend work. For historical rows, I only inferred `Active` and `Returned` because there is yet no due date or book loss data available to use `Overdue` or `Lost` in the db safely. The tradeoff is temporary maintenance cost for two endpoints, but that is acceptable compared to breaking an active frontend. I believe it strongly aligns with the live system rule of minimizing disruption first.
+
+---
+
+## Migration 006 - Book Retirement (Soft Delete)
+
+**Description:** This migration adds a soft retire flag for books and also updates application behavior so retired books are hidden from catalogue results and cannot receive new loans on themselves while keeping historical loan records as they are.
+
+### Type of change
+Requires coordination.
+
+### API impact
+`GET /api/books` behavior changed to exclude retired books from results. `POST /api/loans` now checks if the book is flagged as retired or not and rejects new loans for the books with a clear validation error. Loan history endpoints are intentionally kept as they were and still return existing loan and book relationships, so retiring a book does not make old loan responses lose any book details.
+
+### Deployment notes
+You should apply this migration before deploying the new code so the `IsRetired` column exists when updated queries run on the db. During coexistence, old application code continues to work because the new column has a default value and does not remove existing columns or relationships. After new deployment, catalogue reads filter out retired books and loan creation checks retirement status before inserting.
+
+### Decisions and tradeoffs
+I have reviewed the teammate migration proposal and i accepted the main idea which is to have a boolean flag instead of hard deletion, because that preserves the history and also avoids breaking any foreign key links from `Loans`. I also accepted filtering catalogue reads so retired books disappear from normal discovery. I decided to change the implementation in three ways: I used `IsRetired` (instead of isDeleted), I added a safe guard on loan creation to block new loans for retired books, and I avoided applying global query filters that might accidentally null book data inside historical loan responses. The tradeoff is more application logic than "just a WHERE clause" which he proposed, but the way i did it prevents any confusions and also keeps all the clients stable and doesnt risk anything.
