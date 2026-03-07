@@ -105,3 +105,21 @@ You should apply this migration before deploying the new code so the `IsRetired`
 
 ### Decisions and tradeoffs
 I have reviewed the teammate migration proposal and i accepted the main idea which is to have a boolean flag instead of hard deletion, because that preserves the history and also avoids breaking any foreign key links from `Loans`. I also accepted filtering catalogue reads so retired books disappear from normal discovery. I decided to change the implementation in three ways: I used `IsRetired` (instead of isDeleted), I added a safe guard on loan creation to block new loans for retired books, and I avoided applying global query filters that might accidentally null book data inside historical loan responses. The tradeoff is more application logic than "just a WHERE clause" which he proposed, but the way i did it prevents any confusions and also keeps all the clients stable and doesnt risk anything.
+
+---
+
+## Migration 007 - ISBN Column Replacement
+
+**Description:** Replaces the legacy ISBN column with a string column and marks existing ISBN values as invalid (`NULL`) because they are truncated and corrupted and cannot be recovered.
+
+### Type of change
+Requires coordination.
+
+### API impact
+`GET /api/books` keeps the same `isbn` field name, but its now "nullable string ISBN". During and after transition, old rows return `isbn: null` until corrected values are received and filled out. I did not version the endpoint and instead I preserved field presence and documented a contract update so everybody can handle null/string safely.
+
+### Deployment notes
+You should apply this migration before deploying the updated API model to keep schema behavior and everything else aligned. The SQL artifact performs the full transition: adds replacement string column, clears legacy data as invalid, drops the old column, renames replacement, and recreates unique index as partial (`WHERE ISBN IS NOT NULL`). During coexistence, old code that is still reading `isbn` gets the same column name, but downstream clients must tolerate null values for it.
+
+### Decisions and tradeoffs
+I decided to treat existing ISBN values as faulty as per requirement. I accepted that this is a complex contract change: not in endpoint shape, but in value guarantees and type expectations across integrations. Keeping the field name stable minimizes payload churn, while returning null makes the invalid-state explicit instead of silently passing corrupted numbers. The downside is some clients may need parsing updates and null-handling immediately. The upside is correctness and a clean path for later backfill from trusted catalog sources.
